@@ -11,9 +11,11 @@ export class AuthResponse {
     email?: string;
     username?: string;
     status: string;
+    profileCompletionPercent?: number;
   };
   tokens: AuthTokens;
   sessionId: string;
+  needsProfileCompletion: boolean;
 }
 
 export class OtpResponse {
@@ -21,4 +23,7 @@ export class OtpResponse {
   message: string;
   expiresIn: number;
   attemptsRemaining?: number;
+  verificationToken?: string;
+  otpId?: string;
+  expiresAt?: string;
 }

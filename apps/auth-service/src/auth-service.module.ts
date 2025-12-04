@@ -2,10 +2,13 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios';
 import { PersistenceModule } from '@app/persistence';
 import { MessagingModule } from '@app/messaging';
+import { JwtAuthGuard } from '@app/guards';
 import { Session, OtpCode, DeviceInfo } from './domain/entities';
 import { OtpService, SessionService, DeviceService } from './domain/services';
+import { UserIdentityService } from './application/services';
 import { AuthController } from './interfaces/rest';
 
 @Module({
@@ -16,6 +19,7 @@ import { AuthController } from './interfaces/rest';
     }),
     PersistenceModule,
     MessagingModule,
+    HttpModule,
     TypeOrmModule.forFeature([Session, OtpCode, DeviceInfo]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -29,7 +33,7 @@ import { AuthController } from './interfaces/rest';
     }),
   ],
   controllers: [AuthController],
-  providers: [OtpService, SessionService, DeviceService],
+  providers: [OtpService, SessionService, DeviceService, UserIdentityService, JwtAuthGuard],
   exports: [OtpService, SessionService, DeviceService],
 })
 export class AuthServiceModule {}

@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, Length } from 'class-validator';
 
 export class LoginDto {
   @IsString()
@@ -19,4 +19,12 @@ export class LoginDto {
   @IsString()
   @IsOptional()
   ipAddress?: string;
+
+  @IsString()
+  @Length(32, 128)
+  verificationToken: string;
+
+  @IsEnum(['signup', 'login', 'password_reset'])
+  @IsOptional()
+  purpose?: 'signup' | 'login' | 'password_reset';
 }

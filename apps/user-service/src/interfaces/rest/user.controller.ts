@@ -11,8 +11,9 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
-import { ResponseUtils } from '@app/common';
+import { ResponseUtils, UserStatus } from '@app/common';
+import { JwtAuthGuard, AuthenticatedRequest } from '@app/guards';
+import { UnauthorizedException } from '@nestjs/common';
 import { UserService } from '../../application/services';
 import {
   CreateUserDto,
@@ -32,7 +33,7 @@ export class UserController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createUser(@Body() dto: CreateUserDto, @Req() req: Request): Promise<any> {
+  async createUser(@Body() dto: CreateUserDto): Promise<any> {
     const user = await this.userService.createUser(dto);
 
     const response: UserProfileResponse = this.mapToProfileResponse(user);
@@ -45,9 +46,9 @@ export class UserController {
    * GET /users/me
    */
   @Get('me')
-  async getCurrentUser(@Req() req: Request): Promise<any> {
-    // TODO: Get user ID from JWT guard
-    const userId = 'temp-user-id';
+  @UseGuards(JwtAuthGuard)
+  async getCurrentUser(@Req() req: AuthenticatedRequest): Promise<any> {
+    const userId = this.extractUserId(req);
 
     const user = await this.userService.getUserById(userId);
 
@@ -64,12 +65,12 @@ export class UserController {
    * PATCH /users/me
    */
   @Patch('me')
+  @UseGuards(JwtAuthGuard)
   async updateCurrentUser(
     @Body() dto: UpdateUserDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ): Promise<any> {
-    // TODO: Get user ID from JWT guard
-    const userId = 'temp-user-id';
+    const userId = this.extractUserId(req);
 
     const user = await this.userService.updateUser(userId, dto);
 
@@ -83,12 +84,12 @@ export class UserController {
    * PUT /users/me/username
    */
   @Put('me/username')
+  @UseGuards(JwtAuthGuard)
   async updateUsername(
     @Body() dto: UpdateUsernameDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ): Promise<any> {
-    // TODO: Get user ID from JWT guard
-    const userId = 'temp-user-id';
+    const userId = this.extractUserId(req);
 
     const user = await this.userService.updateUsername(userId, dto);
 
@@ -139,6 +140,16 @@ export class UserController {
     return ResponseUtils.success(response, 'User profile retrieved');
   }
 
+  private extractUserId(req: AuthenticatedRequest): string {
+    const userId = (req.user as { sub?: string })?.sub;
+
+    if (!userId) {
+      throw new UnauthorizedException('Invalid authentication token');
+    }
+
+    return userId;
+  }
+
   /**
    * Map User entity to UserProfileResponse
    */
@@ -169,6 +180,8 @@ export class UserController {
       lastActiveAt: user.lastActiveAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      needsProfileCompletion:
+        user.status === UserStatus.PENDING_SETUP || user.profileCompletionPercent < 60,
     };
   }
 }

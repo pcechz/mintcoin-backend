@@ -1,14 +1,29 @@
-import { IsString, IsNotEmpty, Length, Matches, IsEmail, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  Length,
+  Matches,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  ValidateIf,
+} from 'class-validator';
 
 export class VerifyOtpDto {
+  @ValidateIf((dto) => dto.identifierType === 'phone')
   @IsString()
-  @IsOptional()
   @Matches(/^\+?[1-9]\d{1,14}$/)
   phone?: string;
 
+  @ValidateIf((dto) => dto.identifierType === 'email')
   @IsEmail()
-  @IsOptional()
   email?: string;
+
+  @IsEnum(['phone', 'email'])
+  identifierType: 'phone' | 'email';
+
+  @IsEnum(['signup', 'login', 'password_reset'])
+  purpose: 'signup' | 'login' | 'password_reset';
 
   @IsString()
   @IsNotEmpty()

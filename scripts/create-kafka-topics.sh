@@ -33,6 +33,8 @@ create_topic() {
 # ============================================
 # AUTH & USER EVENTS
 # ============================================
+create_topic "auth.otp.sent"
+create_topic "auth.otp.verified"
 create_topic "auth.user.registered"
 create_topic "auth.user.login"
 create_topic "auth.user.logout"

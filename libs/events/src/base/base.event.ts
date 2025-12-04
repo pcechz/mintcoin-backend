@@ -35,7 +35,13 @@ export const EVENT_TOPICS = {
     USER_LOGIN: 'auth.user.login',
     USER_LOGOUT: 'auth.user.logout',
     SESSION_CREATED: 'auth.session.created',
+    SESSION_REFRESHED: 'auth.session.refreshed',
     SESSION_REVOKED: 'auth.session.revoked',
+    OTP_SENT: 'auth.otp.sent',
+    OTP_VERIFIED: 'auth.otp.verified',
+    DEVICE_REGISTERED: 'auth.device.registered',
+    DEVICE_TRUSTED: 'auth.device.trusted',
+    DEVICE_BLOCKED: 'auth.device.blocked',
   },
 
   // User Events

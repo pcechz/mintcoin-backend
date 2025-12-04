@@ -10,7 +10,13 @@ import { Repository } from 'typeorm';
 import { MessagingService } from '@app/messaging';
 import { EVENT_TOPICS } from '@app/events';
 import { User } from '../../domain/entities';
-import { CreateUserDto, UpdateUserDto, UpdateUsernameDto } from '../dto';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  UpdateUsernameDto,
+  BootstrapUserDto,
+  RecordLoginActivityDto,
+} from '../dto';
 import { CryptoUtils, UserStatus, UserLifecycleState, KycStatus, KycTier } from '@app/common';
 
 @Injectable()
@@ -36,10 +42,13 @@ export class UserService {
       throw new ConflictException('Username already taken');
     }
 
+    const normalizedPhone = this.normalizePhone(dto.phone);
+    const normalizedEmail = this.normalizeEmail(dto.email);
+
     // Check if phone/email already exists
-    if (dto.phone) {
+    if (normalizedPhone) {
       const existingPhone = await this.userRepository.findOne({
-        where: { phone: dto.phone },
+        where: { phone: normalizedPhone },
       });
 
       if (existingPhone) {
@@ -47,9 +56,9 @@ export class UserService {
       }
     }
 
-    if (dto.email) {
+    if (normalizedEmail) {
       const existingEmail = await this.userRepository.findOne({
-        where: { email: dto.email },
+        where: { email: normalizedEmail },
       });
 
       if (existingEmail) {
@@ -74,10 +83,10 @@ export class UserService {
 
     // Create user
     const user = this.userRepository.create({
-      phone: dto.phone,
-      email: dto.email,
-      phoneVerified: !!dto.phone, // Assume verified if provided (OTP verified)
-      emailVerified: !!dto.email,
+      phone: normalizedPhone,
+      email: normalizedEmail,
+      phoneVerified: Boolean(normalizedPhone),
+      emailVerified: Boolean(normalizedEmail),
       username: dto.username,
       name: dto.name,
       avatarUrl: dto.avatarUrl,
@@ -100,8 +109,10 @@ export class UserService {
       deviceId: dto.deviceId,
       ipAddress: dto.ipAddress,
       registrationSource: 'mobile_app',
-      profileCompletionPercent: this.calculateProfileCompletion(dto),
     });
+
+    user.profileCompletionPercent = this.calculateProfileCompletionFromUser(user);
+    this.updateStatusFromProfile(user);
 
     const savedUser = await this.userRepository.save(user);
 
@@ -184,6 +195,101 @@ export class UserService {
   }
 
   /**
+   * Find user by identifier (phone/email)
+   */
+  async findByIdentifier(
+    identifier: string,
+    identifierType: 'phone' | 'email',
+  ): Promise<User | null> {
+    if (identifierType === 'phone') {
+      const normalized = this.normalizePhone(identifier);
+      if (!normalized) {
+        return null;
+      }
+
+      return this.userRepository.findOne({ where: { phone: normalized } });
+    }
+
+    const normalized = this.normalizeEmail(identifier);
+    if (!normalized) {
+      return null;
+    }
+
+    return this.userRepository.findOne({ where: { email: normalized } });
+  }
+
+  /**
+   * Bootstrap user record after OTP verification (called by Auth Service)
+   */
+  async bootstrapUserFromAuth(dto: BootstrapUserDto): Promise<User> {
+    const existing = await this.findByIdentifier(dto.identifier, dto.identifierType);
+    if (existing) {
+      return existing;
+    }
+
+    const normalizedIdentifier =
+      dto.identifierType === 'phone'
+        ? this.normalizePhone(dto.identifier)
+        : this.normalizeEmail(dto.identifier);
+
+    if (!normalizedIdentifier) {
+      throw new BadRequestException('Invalid identifier supplied');
+    }
+
+    const generatedUsername = await this.generateSystemUsername(normalizedIdentifier);
+    const referralCode = await this.generateUniqueReferralCode(generatedUsername);
+
+    const provisionalName =
+      dto.identifierType === 'phone'
+        ? `User ${normalizedIdentifier.slice(-4)}`
+        : `${normalizedIdentifier.split('@')[0] || 'New User'}`;
+
+    const user = this.userRepository.create({
+      phone: dto.identifierType === 'phone' ? normalizedIdentifier : undefined,
+      email: dto.identifierType === 'email' ? normalizedIdentifier : undefined,
+      phoneVerified: dto.identifierType === 'phone',
+      emailVerified: dto.identifierType === 'email',
+      username: generatedUsername,
+      name: provisionalName,
+      status: UserStatus.PENDING_SETUP,
+      lifecycleState: UserLifecycleState.NEW_USER,
+      isCreator: false,
+      kycStatus: KycStatus.NOT_STARTED,
+      kycTier: KycTier.TIER_0,
+      referralCode,
+      deviceId: dto.deviceId,
+      ipAddress: dto.ipAddress,
+      registrationSource: 'mobile_app',
+      profileCompletionPercent: 0,
+    });
+
+    user.profileCompletionPercent = this.calculateProfileCompletionFromUser(user);
+    this.updateStatusFromProfile(user);
+
+    return this.userRepository.save(user);
+  }
+
+  /**
+   * Record login activity from Auth Service
+   */
+  async recordLoginActivity(
+    userId: string,
+    metadata: RecordLoginActivityDto,
+  ): Promise<User> {
+    const user = await this.getUserById(userId);
+
+    user.lastLoginAt = new Date();
+    user.lastActiveAt = new Date();
+    user.loginCount = (user.loginCount || 0) + 1;
+    user.deviceId = metadata.deviceId || user.deviceId;
+    user.ipAddress = metadata.ipAddress || user.ipAddress;
+
+    this.updateStatusFromProfile(user);
+
+    return this.userRepository.save(user);
+  }
+
+  /**
    * Update user profile
    */
   async updateUser(userId: string, dto: UpdateUserDto): Promise<User> {
@@ -246,6 +352,7 @@ export class UserService {
 
     // Recalculate profile completion
     user.profileCompletionPercent = this.calculateProfileCompletionFromUser(user);
+    this.updateStatusFromProfile(user);
 
     const savedUser = await this.userRepository.save(user);
 
@@ -283,6 +390,8 @@ export class UserService {
 
     const oldUsername = user.username;
     user.username = dto.username;
+    user.profileCompletionPercent = this.calculateProfileCompletionFromUser(user);
+    this.updateStatusFromProfile(user);
 
     const savedUser = await this.userRepository.save(user);
 
@@ -384,6 +493,42 @@ export class UserService {
     );
   }
 
+  private normalizePhone(phone?: string): string | undefined {
+    return phone ? phone.replace(/\s+/g, '') : undefined;
+  }
+
+  private normalizeEmail(email?: string): string | undefined {
+    return email ? email.trim().toLowerCase() : undefined;
+  }
+
+  private updateStatusFromProfile(user: User): void {
+    if (
+      user.status === UserStatus.PENDING_SETUP &&
+      user.profileCompletionPercent >= 60
+    ) {
+      user.status = UserStatus.ACTIVE;
+    }
+  }
+
+  private async generateSystemUsername(seed: string): Promise<string> {
+    const base = seed.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'mint';
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const suffix = CryptoUtils.generateRandomString(3);
+      const candidate = `${base.slice(-6)}${suffix}`.toLowerCase();
+
+      const existing = await this.userRepository.findOne({
+        where: { username: candidate },
+      });
+
+      if (!existing) {
+        return candidate;
+      }
+    }
+
+    return CryptoUtils.generateReferralCode('user', 6).toLowerCase();
+  }
+
   /**
    * Generate unique referral code
    */
@@ -408,27 +553,6 @@ export class UserService {
 
     // Fallback to fully random code
     return CryptoUtils.generateReferralCode('', 8);
-  }
-
-  /**
-   * Calculate profile completion percentage
-   */
-  private calculateProfileCompletion(dto: CreateUserDto): number {
-    let completed = 0;
-    const total = 10;
-
-    if (dto.username) completed++;
-    if (dto.name) completed++;
-    if (dto.phone || dto.email) completed++;
-    if (dto.avatarUrl) completed++;
-    if (dto.bio) completed++;
-    if (dto.gender) completed++;
-    if (dto.ageBracket) completed++;
-    if (dto.dateOfBirth) completed++;
-    if (dto.location) completed++;
-    if (dto.interests && dto.interests.length > 0) completed++;
-
-    return Math.round((completed / total) * 100);
   }
 
   /**

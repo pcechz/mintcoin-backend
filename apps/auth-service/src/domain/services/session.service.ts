@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -113,7 +118,7 @@ export class SessionService {
   async refreshTokens(
     refreshToken: string,
     deviceId: string,
-  ): Promise<TokenPair> {
+  ): Promise<{ tokens: TokenPair; session: Session }> {
     try {
       // Verify refresh token
       const payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
@@ -140,7 +145,7 @@ export class SessionService {
 
       // Check if session expired
       if (DateUtils.isPast(session.expiresAt)) {
-        await this.revokeSession(session.id, 'expired');
+        await this.revokeSession(session.id, session.userId, 'expired');
         throw new UnauthorizedException('Session expired');
       }
 
@@ -155,7 +160,7 @@ export class SessionService {
 
       this.logger.log(`Tokens refreshed for user ${payload.sub}`);
 
-      return tokens;
+      return { tokens, session };
     } catch (error) {
       this.logger.error('Token refresh failed', error.stack);
       throw new UnauthorizedException('Invalid refresh token');
@@ -196,16 +201,21 @@ export class SessionService {
    */
   async revokeSession(
     sessionId: string,
+    userId: string,
     reason: 'logout' | 'expired' | 'security' | 'admin',
   ): Promise<void> {
-    await this.sessionRepository.update(
-      { id: sessionId },
-      {
-        isActive: false,
-        revokedAt: DateUtils.nowDate(),
-        revokeReason: reason,
-      },
-    );
+    const session = await this.sessionRepository.findOne({
+      where: { id: sessionId, userId, isActive: true },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    session.isActive = false;
+    session.revokedAt = DateUtils.nowDate();
+    session.revokeReason = reason;
+    await this.sessionRepository.save(session);
 
     this.logger.log(`Session ${sessionId} revoked (${reason})`);
   }

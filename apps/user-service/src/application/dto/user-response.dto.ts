@@ -24,6 +24,7 @@ export class UserProfileResponse {
   lastActiveAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  needsProfileCompletion: boolean;
 }
 
 export class PublicUserResponse {

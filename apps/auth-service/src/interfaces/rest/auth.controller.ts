@@ -9,12 +9,16 @@ import {
   Get,
   UnauthorizedException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { MessagingService } from '@app/messaging';
 import { EVENT_TOPICS } from '@app/events';
 import { ResponseUtils } from '@app/common';
+import { JwtAuthGuard, AuthenticatedRequest } from '@app/guards';
 import { OtpService, SessionService, DeviceService } from '../../domain/services';
+import { JwtPayload } from '../../domain/services/session.service';
+import { UserIdentityService } from '../../application/services';
 import {
   SendOtpDto,
   VerifyOtpDto,
@@ -27,11 +31,14 @@ import {
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly otpService: OtpService,
     private readonly sessionService: SessionService,
     private readonly deviceService: DeviceService,
     private readonly messagingService: MessagingService,
+    private readonly userIdentityService: UserIdentityService,
   ) {}
 
   /**
@@ -44,35 +51,34 @@ export class AuthController {
     @Body() dto: SendOtpDto,
     @Req() req: Request,
   ): Promise<OtpResponse> {
-    const identifier = dto.channel === 'phone' ? dto.phone : dto.email;
+    const identifier = dto.identifierType === 'phone' ? dto.phone : dto.email;
 
     if (!identifier) {
-      throw new BadRequestException(`${dto.channel} is required`);
+      throw new BadRequestException(`${dto.identifierType} is required`);
     }
 
-    const ipAddress = req.ip;
+    const ipAddress = this.getRequestIp(req);
 
-    // Generate OTP
     const { code, expiresAt } = await this.otpService.generateOtp(
       identifier,
-      dto.channel,
+      dto.identifierType,
       dto.purpose,
       dto.deviceId,
       ipAddress,
     );
 
-    // TODO: Send OTP via SMS/Email
-    // For now, we'll just log it (in production, integrate with SMS/Email provider)
-    console.log(`OTP for ${identifier}: ${code}`);
+    // TODO: integrate SMS/Email provider
+    this.logOtp(identifier, code);
 
-    // Publish event (for analytics/monitoring)
-    await this.messagingService.publish(EVENT_TOPICS.AUTH.SESSION_CREATED, {
-      eventType: EVENT_TOPICS.AUTH.SESSION_CREATED,
+    await this.messagingService.publish(EVENT_TOPICS.AUTH.OTP_SENT, {
+      eventType: EVENT_TOPICS.AUTH.OTP_SENT,
       payload: {
-        sessionId: 'temp', // Will be created after verification
-        userId: 'temp',
-        deviceId: dto.deviceId || 'unknown',
+        identifier,
+        identifierType: dto.identifierType,
+        purpose: dto.purpose,
         expiresAt: expiresAt.toISOString(),
+        deviceId: dto.deviceId,
+        ipAddress,
       },
     });
 
@@ -82,8 +88,9 @@ export class AuthController {
 
     return {
       success: true,
-      message: `OTP sent to your ${dto.channel}`,
+      message: `OTP sent to your ${dto.identifierType}`,
       expiresIn: expiresInSeconds,
+      expiresAt: expiresAt.toISOString(),
     };
   }
 
@@ -97,19 +104,37 @@ export class AuthController {
     @Body() dto: VerifyOtpDto,
     @Req() req: Request,
   ): Promise<any> {
-    const identifier = dto.phone || dto.email;
+    const identifier = dto.identifierType === 'phone' ? dto.phone : dto.email;
 
     if (!identifier) {
       throw new BadRequestException('Phone or email is required');
     }
 
-    const purpose = 'signup'; // You can determine this from context
+    const verification = await this.otpService.verifyOtp(
+      identifier,
+      dto.identifierType,
+      dto.code,
+      dto.purpose,
+    );
 
-    // Verify OTP
-    await this.otpService.verifyOtp(identifier, dto.code, purpose);
+    await this.messagingService.publish(EVENT_TOPICS.AUTH.OTP_VERIFIED, {
+      eventType: EVENT_TOPICS.AUTH.OTP_VERIFIED,
+      payload: {
+        identifier,
+        identifierType: dto.identifierType,
+        purpose: dto.purpose,
+        deviceId: dto.deviceId,
+        verificationToken: verification.verificationToken,
+      },
+    });
 
     return ResponseUtils.success(
-      { verified: true },
+      {
+        verified: true,
+        verificationToken: verification.verificationToken,
+        otpId: verification.otpId,
+        expiresAt: verification.expiresAt.toISOString(),
+      },
       'OTP verified successfully',
     );
   }
@@ -124,63 +149,92 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Req() req: Request,
   ): Promise<any> {
-    // This endpoint assumes user already exists and OTP is verified
-    // In a real scenario, you'd verify OTP first, then get user info from User Service
-
-    const ipAddress = dto.ipAddress || req.ip;
+    const identifier = dto.identifier.trim();
+    const ipAddress = dto.ipAddress || this.getRequestIp(req);
     const userAgent = req.headers['user-agent'] || '';
+    const loginPurpose = dto.purpose ?? 'login';
 
-    // Register device
+    const verifiedOtp = await this.otpService.validateVerifiedOtp(
+      identifier,
+      dto.identifierType,
+      loginPurpose,
+      dto.verificationToken,
+    );
+
+    const user = await this.userIdentityService.getOrCreateUser({
+      identifier,
+      identifierType: dto.identifierType,
+      deviceId: dto.deviceId,
+      ipAddress,
+    });
+
     const device = await this.deviceService.registerDevice(
-      'temp-user-id', // TODO: Get actual user ID from User Service
+      user.id,
       dto.deviceId,
       userAgent,
       ipAddress,
       dto.deviceName,
     );
 
-    // Check if device is blocked
     if (device.isBlocked) {
       throw new UnauthorizedException('This device has been blocked');
     }
 
-    // Check for suspicious activity
-    const isSuspicious = await this.deviceService.checkSuspiciousActivity(
-      'temp-user-id',
+    const suspiciousCheck = await this.deviceService.checkSuspiciousActivity(
+      user.id,
+      dto.deviceId,
       ipAddress,
     );
 
-    if (isSuspicious) {
-      // TODO: Send security alert, require additional verification
-      console.log('Suspicious login attempt detected');
+    if (suspiciousCheck.isSuspicious) {
+      this.logger.warn(
+        `Suspicious login for user ${user.id}: ${suspiciousCheck.reasons.join(', ')}`,
+      );
     }
 
-    // Create session and generate tokens
     const { session, tokens } = await this.sessionService.createSession(
-      'temp-user-id', // TODO: Get actual user ID
+      user.id,
       dto.deviceId,
       ipAddress,
       userAgent,
     );
 
-    // Publish login event
-    await this.messagingService.publish(EVENT_TOPICS.AUTH.USER_LOGIN, {
-      eventType: EVENT_TOPICS.AUTH.USER_LOGIN,
+    await this.userIdentityService.recordLogin(user.id, {
+      deviceId: dto.deviceId,
+      ipAddress,
+    });
+    await this.otpService.consumeVerifiedOtp(verifiedOtp.id);
+
+    await this.messagingService.publish(EVENT_TOPICS.AUTH.SESSION_CREATED, {
+      eventType: EVENT_TOPICS.AUTH.SESSION_CREATED,
       payload: {
-        userId: 'temp-user-id',
+        sessionId: session.id,
+        userId: user.id,
         deviceId: dto.deviceId,
         ipAddress,
         loginMethod: dto.identifierType,
       },
     });
 
+    await this.messagingService.publish(EVENT_TOPICS.AUTH.USER_LOGIN, {
+      eventType: EVENT_TOPICS.AUTH.USER_LOGIN,
+      payload: {
+        userId: user.id,
+        deviceId: dto.deviceId,
+        ipAddress,
+        loginMethod: dto.identifierType,
+        needsOnboarding: user.needsOnboarding,
+      },
+    });
+
     const response: AuthResponse = {
       user: {
-        id: 'temp-user-id',
-        phone: dto.identifierType === 'phone' ? dto.identifier : undefined,
-        email: dto.identifierType === 'email' ? dto.identifier : undefined,
-        username: 'temp-username',
-        status: 'active',
+        id: user.id,
+        phone: user.phone,
+        email: user.email,
+        username: user.username,
+        status: user.status,
+        profileCompletionPercent: user.profileCompletionPercent,
       },
       tokens: {
         accessToken: tokens.accessToken,
@@ -188,6 +242,7 @@ export class AuthController {
         expiresIn: tokens.expiresIn,
       },
       sessionId: session.id,
+      needsProfileCompletion: Boolean(user.needsOnboarding),
     };
 
     return ResponseUtils.success(response, 'Login successful');
@@ -200,10 +255,19 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Body() dto: RefreshTokenDto): Promise<any> {
-    const tokens = await this.sessionService.refreshTokens(
+    const { tokens, session } = await this.sessionService.refreshTokens(
       dto.refreshToken,
       dto.deviceId,
     );
+
+    await this.messagingService.publish(EVENT_TOPICS.AUTH.SESSION_REFRESHED, {
+      eventType: EVENT_TOPICS.AUTH.SESSION_REFRESHED,
+      payload: {
+        sessionId: session.id,
+        userId: session.userId,
+        deviceId: dto.deviceId,
+      },
+    });
 
     return ResponseUtils.success(
       {
@@ -221,16 +285,30 @@ export class AuthController {
    */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Body() dto: LogoutDto): Promise<any> {
-    await this.sessionService.revokeSession(dto.sessionId, 'logout');
+  @UseGuards(JwtAuthGuard)
+  async logout(
+    @Body() dto: LogoutDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<any> {
+    const payload = req.user as JwtPayload;
 
-    // Publish logout event
+    await this.sessionService.revokeSession(dto.sessionId, payload.sub, 'logout');
+
     await this.messagingService.publish(EVENT_TOPICS.AUTH.USER_LOGOUT, {
       eventType: EVENT_TOPICS.AUTH.USER_LOGOUT,
       payload: {
-        userId: 'temp-user-id', // TODO: Get from session
+        userId: payload.sub,
         sessionId: dto.sessionId,
         deviceId: dto.deviceId || 'unknown',
+      },
+    });
+
+    await this.messagingService.publish(EVENT_TOPICS.AUTH.SESSION_REVOKED, {
+      eventType: EVENT_TOPICS.AUTH.SESSION_REVOKED,
+      payload: {
+        sessionId: dto.sessionId,
+        userId: payload.sub,
+        reason: 'logout',
       },
     });
 
@@ -242,11 +320,11 @@ export class AuthController {
    * GET /auth/sessions
    */
   @Get('sessions')
-  async getSessions(@Req() req: Request): Promise<any> {
-    // TODO: Get user ID from JWT guard
-    const userId = 'temp-user-id';
+  @UseGuards(JwtAuthGuard)
+  async getSessions(@Req() req: AuthenticatedRequest): Promise<any> {
+    const payload = req.user as JwtPayload;
 
-    const sessions = await this.sessionService.getUserSessions(userId);
+    const sessions = await this.sessionService.getUserSessions(payload.sub);
 
     return ResponseUtils.success(sessions, 'Sessions retrieved successfully');
   }
@@ -257,15 +335,35 @@ export class AuthController {
    */
   @Post('sessions/revoke-all')
   @HttpCode(HttpStatus.OK)
-  async revokeAllSessions(@Req() req: Request): Promise<any> {
-    // TODO: Get user ID from JWT guard
-    const userId = 'temp-user-id';
+  @UseGuards(JwtAuthGuard)
+  async revokeAllSessions(@Req() req: AuthenticatedRequest): Promise<any> {
+    const payload = req.user as JwtPayload;
 
-    await this.sessionService.revokeAllUserSessions(userId, 'security');
+    await this.sessionService.revokeAllUserSessions(payload.sub, 'security');
 
     return ResponseUtils.success(
       null,
       'All sessions revoked successfully',
     );
+  }
+
+  private getRequestIp(req: Request): string {
+    const forwarded = req.headers['x-forwarded-for'];
+
+    if (Array.isArray(forwarded)) {
+      return forwarded[0];
+    }
+
+    if (typeof forwarded === 'string' && forwarded.length > 0) {
+      return forwarded.split(',')[0].trim();
+    }
+
+    return req.ip;
+  }
+
+  private logOtp(identifier: string, code: string): void {
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.debug(`OTP for ${identifier}: ${code}`);
+    }
   }
 }

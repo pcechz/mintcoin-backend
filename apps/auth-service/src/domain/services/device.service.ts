@@ -130,23 +130,37 @@ export class DeviceService {
   /**
    * Check for suspicious device activity
    */
-  async checkSuspiciousActivity(userId: string, ipAddress: string): Promise<boolean> {
-    // Get recent devices for this user
+  async checkSuspiciousActivity(
+    userId: string,
+    deviceId: string,
+    ipAddress: string,
+  ): Promise<{ isSuspicious: boolean; reasons: string[] }> {
     const devices = await this.getUserDevices(userId);
+    const device = devices.find((d) => d.deviceId === deviceId);
+    const isKnownDevice = Boolean(device);
+    const reasons: string[] = [];
 
-    // Check if this IP is new
-    const knownIps = devices.map(d => d.ipAddress);
-    const isNewIp = !knownIps.includes(ipAddress);
+    if (!isKnownDevice && devices.length > 0) {
+      reasons.push('NEW_DEVICE');
+    }
 
-    // Check rapid sign-ins from different IPs
-    const recentDevices = devices.filter(d => {
-      const hourAgo = DateUtils.subtractTime(1, 'hour');
-      return DateUtils.isBetween(d.lastSeenAt, hourAgo, DateUtils.nowDate());
-    });
+    if (device && device.ipAddress !== ipAddress) {
+      reasons.push('IP_CHANGED');
+    }
 
-    const hasDifferentIps = new Set(recentDevices.map(d => d.ipAddress)).size > 3;
+    const hourAgo = DateUtils.subtractTime(1, 'hour');
+    const recentIps = devices
+      .filter((d) => DateUtils.isBetween(d.lastSeenAt, hourAgo, DateUtils.nowDate()))
+      .map((d) => d.ipAddress);
 
-    return isNewIp || hasDifferentIps;
+    if (new Set(recentIps).size > 3) {
+      reasons.push('MULTIPLE_IPS');
+    }
+
+    return {
+      isSuspicious: reasons.length > 0,
+      reasons,
+    };
   }
 
   /**

@@ -21,6 +21,12 @@ export class OtpCode extends BaseEntity {
   @Column({ name: 'purpose', type: 'varchar', length: 50 })
   purpose: 'signup' | 'login' | 'password_reset' | 'phone_verification' | 'email_verification';
 
+  @Column({ name: 'is_verified', type: 'boolean', default: false })
+  isVerified: boolean;
+
+  @Column({ name: 'verified_at', type: 'timestamp', nullable: true })
+  verifiedAt?: Date;
+
   @Column({ name: 'is_used', type: 'boolean', default: false })
   isUsed: boolean;
 
@@ -35,6 +41,10 @@ export class OtpCode extends BaseEntity {
 
   @Column({ name: 'max_attempts', type: 'int', default: 3 })
   maxAttempts: number;
+
+  @Column({ name: 'verification_token', type: 'varchar', length: 128, nullable: true })
+  @Index()
+  verificationToken?: string;
 
   @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
   ipAddress?: string;
