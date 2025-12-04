@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gift-service
+  namespace: core
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gift-service
+  template:
+    metadata:
+      labels:
+        app: gift-service
+    spec:
+      containers:
+        - name: gift-service
+          image: your-registry/gift-service:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: gift-service-config
+              optional: true
+            - secretRef:
+                name: gift-service-secrets
+              optional: true

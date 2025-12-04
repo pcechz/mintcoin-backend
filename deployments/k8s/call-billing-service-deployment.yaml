@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: call-billing-service
+  namespace: realtime
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: call-billing-service
+  template:
+    metadata:
+      labels:
+        app: call-billing-service
+    spec:
+      containers:
+        - name: call-billing-service
+          image: your-registry/call-billing-service:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: call-billing-service-config
+              optional: true
+            - secretRef:
+                name: call-billing-service-secrets
+              optional: true

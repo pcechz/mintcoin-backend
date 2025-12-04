@@ -1,0 +1,72 @@
+name: Build and Push Images
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "20"
+  REGISTRY: ${{ secrets.REGISTRY }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - api-gateway
+          - auth-service
+          - user-service
+          - kyc-service
+          - wallet-service
+          - ledger-service
+          - payment-service
+          - room-service
+          - call-billing-service
+          - chat-service
+          - gift-service
+          - referral-service
+          - discovery-service
+          - social-graph-service
+          - notification-service
+          - moderation-service
+          - fraud-service
+          - admin-service
+          - analytics-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Login to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          SERVICE=${{ matrix.service }}
+          IMAGE="${REGISTRY}/${SERVICE}"
+
+          docker build \
+            -f deployments/docker/${SERVICE}.Dockerfile \
+            -t ${IMAGE}:latest \
+            -t ${IMAGE}:${GITHUB_SHA} \
+            .
+
+      - name: Push Docker image
+        run: |
+          SERVICE=${{ matrix.service }}
+          IMAGE="${REGISTRY}/${SERVICE}"
+
+          docker push ${IMAGE}:latest
+          docker push ${IMAGE}:${GITHUB_SHA}

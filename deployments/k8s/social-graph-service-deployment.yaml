@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: social-graph-service
+  namespace: core
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: social-graph-service
+  template:
+    metadata:
+      labels:
+        app: social-graph-service
+    spec:
+      containers:
+        - name: social-graph-service
+          image: your-registry/social-graph-service:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: social-graph-service-config
+              optional: true
+            - secretRef:
+                name: social-graph-service-secrets
+              optional: true

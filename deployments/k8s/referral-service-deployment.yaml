@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: referral-service
+  namespace: core
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: referral-service
+  template:
+    metadata:
+      labels:
+        app: referral-service
+    spec:
+      containers:
+        - name: referral-service
+          image: your-registry/referral-service:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: referral-service-config
+              optional: true
+            - secretRef:
+                name: referral-service-secrets
+              optional: true

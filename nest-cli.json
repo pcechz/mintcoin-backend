@@ -1,0 +1,281 @@
+{
+  "projects": {
+    "admin-service": {
+      "type": "application",
+      "root": "apps/admin-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/admin-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/admin-service/tsconfig.app.json"
+      }
+    },
+    "analytics-service": {
+      "type": "application",
+      "root": "apps/analytics-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/analytics-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/analytics-service/tsconfig.app.json"
+      }
+    },
+    "api-gateway": {
+      "type": "application",
+      "root": "apps/api-gateway",
+      "entryFile": "main",
+      "sourceRoot": "apps/api-gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+      }
+    },
+    "auth": {
+      "type": "library",
+      "root": "libs/auth",
+      "entryFile": "index",
+      "sourceRoot": "libs/auth/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/auth/tsconfig.lib.json"
+      }
+    },
+    "auth-service": {
+      "type": "application",
+      "root": "apps/auth-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/auth-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/auth-service/tsconfig.app.json"
+      }
+    },
+    "backend": {
+      "type": "application",
+      "root": "apps/backend",
+      "entryFile": "main",
+      "sourceRoot": "apps/backend/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/backend/tsconfig.app.json"
+      }
+    },
+    "call-billing-service": {
+      "type": "application",
+      "root": "apps/call-billing-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/call-billing-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/call-billing-service/tsconfig.app.json"
+      }
+    },
+    "chat-service": {
+      "type": "application",
+      "root": "apps/chat-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/chat-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/chat-service/tsconfig.app.json"
+      }
+    },
+    "common": {
+      "type": "library",
+      "root": "libs/common",
+      "entryFile": "index",
+      "sourceRoot": "libs/common/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/common/tsconfig.lib.json"
+      }
+    },
+    "config": {
+      "type": "library",
+      "root": "libs/config",
+      "entryFile": "index",
+      "sourceRoot": "libs/config/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/config/tsconfig.lib.json"
+      }
+    },
+    "discovery-service": {
+      "type": "application",
+      "root": "apps/discovery-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/discovery-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/discovery-service/tsconfig.app.json"
+      }
+    },
+    "dto": {
+      "type": "library",
+      "root": "libs/dto",
+      "entryFile": "index",
+      "sourceRoot": "libs/dto/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/dto/tsconfig.lib.json"
+      }
+    },
+    "events": {
+      "type": "library",
+      "root": "libs/events",
+      "entryFile": "index",
+      "sourceRoot": "libs/events/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/events/tsconfig.lib.json"
+      }
+    },
+    "fraud-service": {
+      "type": "application",
+      "root": "apps/fraud-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/fraud-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/fraud-service/tsconfig.app.json"
+      }
+    },
+    "gift-service": {
+      "type": "application",
+      "root": "apps/gift-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/gift-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/gift-service/tsconfig.app.json"
+      }
+    },
+    "guards": {
+      "type": "library",
+      "root": "libs/guards",
+      "entryFile": "index",
+      "sourceRoot": "libs/guards/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/guards/tsconfig.lib.json"
+      }
+    },
+    "kafka": {
+      "type": "library",
+      "root": "libs/kafka",
+      "entryFile": "index",
+      "sourceRoot": "libs/kafka/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/kafka/tsconfig.lib.json"
+      }
+    },
+    "kyc-service": {
+      "type": "application",
+      "root": "apps/kyc-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/kyc-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/kyc-service/tsconfig.app.json"
+      }
+    },
+    "ledger-service": {
+      "type": "application",
+      "root": "apps/ledger-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/ledger-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ledger-service/tsconfig.app.json"
+      }
+    },
+    "messaging": {
+      "type": "library",
+      "root": "libs/messaging",
+      "entryFile": "index",
+      "sourceRoot": "libs/messaging/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/messaging/tsconfig.lib.json"
+      }
+    },
+    "moderation-service": {
+      "type": "application",
+      "root": "apps/moderation-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/moderation-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/moderation-service/tsconfig.app.json"
+      }
+    },
+    "notification-service": {
+      "type": "application",
+      "root": "apps/notification-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-service/tsconfig.app.json"
+      }
+    },
+    "payment-service": {
+      "type": "application",
+      "root": "apps/payment-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/payment-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payment-service/tsconfig.app.json"
+      }
+    },
+    "persistence": {
+      "type": "library",
+      "root": "libs/persistence",
+      "entryFile": "index",
+      "sourceRoot": "libs/persistence/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/persistence/tsconfig.lib.json"
+      }
+    },
+    "referral-service": {
+      "type": "application",
+      "root": "apps/referral-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/referral-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/referral-service/tsconfig.app.json"
+      }
+    },
+    "room-service": {
+      "type": "application",
+      "root": "apps/room-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/room-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/room-service/tsconfig.app.json"
+      }
+    },
+    "social-graph-service": {
+      "type": "application",
+      "root": "apps/social-graph-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/social-graph-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/social-graph-service/tsconfig.app.json"
+      }
+    },
+    "user-service": {
+      "type": "application",
+      "root": "apps/user-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/user-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/user-service/tsconfig.app.json"
+      }
+    },
+    "validation": {
+      "type": "library",
+      "root": "libs/validation",
+      "entryFile": "index",
+      "sourceRoot": "libs/validation/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/validation/tsconfig.lib.json"
+      }
+    },
+    "wallet-service": {
+      "type": "application",
+      "root": "apps/wallet-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/wallet-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/wallet-service/tsconfig.app.json"
+      }
+    }
+  },
+  "compilerOptions": {
+    "webpack": true,
+    "tsConfigPath": "apps/backend/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/backend",
+  "sourceRoot": "apps/backend/src"
+}

@@ -1,0 +1,1390 @@
+{
+  "info": {
+    "name": "MintCoin API - Complete Collection",
+    "description": "Comprehensive API collection for MintCoin Backend - Social media platform with video calls, rooms, gifts, and wallet management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "mintcoin-backend"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "authServiceUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "userServiceUrl",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId",
+      "value": "test-device-12345",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Send OTP (Phone)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Device-Id",
+                "value": "{{deviceId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+2348012345678\",\n  \"channel\": \"phone\",\n  \"purpose\": \"signup\",\n  \"deviceId\": \"{{deviceId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/otp/send",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "otp", "send"]
+            },
+            "description": "Request OTP code via SMS"
+          },
+          "response": []
+        },
+        {
+          "name": "Send OTP (Email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"channel\": \"email\",\n  \"purpose\": \"signup\",\n  \"deviceId\": \"{{deviceId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/otp/send",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "otp", "send"]
+            },
+            "description": "Request OTP code via Email"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP (Phone)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+2348012345678\",\n  \"code\": \"123456\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceName\": \"iPhone 13\"\n}"
+            },
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/otp/verify",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "otp", "verify"]
+            },
+            "description": "Verify OTP code for phone"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP (Email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"code\": \"123456\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceName\": \"iPhone 13\"\n}"
+            },
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/otp/verify",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "otp", "verify"]
+            },
+            "description": "Verify OTP code for email"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.tokens) {",
+                  "        pm.collectionVariables.set('accessToken', jsonData.data.tokens.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.data.tokens.refreshToken);",
+                  "        pm.collectionVariables.set('sessionId', jsonData.data.sessionId);",
+                  "        pm.collectionVariables.set('userId', jsonData.data.user.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"+2348012345678\",\n  \"identifierType\": \"phone\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceName\": \"iPhone 13\"\n}"
+            },
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/login",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login and create session (after OTP verification). Automatically saves tokens."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\",\n  \"deviceId\": \"{{deviceId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/refresh",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Refresh access token using refresh token"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Sessions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/sessions",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "sessions"]
+            },
+            "description": "Get current user's active sessions"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"deviceId\": \"{{deviceId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/logout",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout and revoke current session"
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke All Sessions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{authServiceUrl}}/auth/sessions/revoke-all",
+              "host": ["{{authServiceUrl}}"],
+              "path": ["auth", "sessions", "revoke-all"]
+            },
+            "description": "Logout from all devices (revoke all sessions)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Authentication endpoints - OTP, login, session management"
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.id) {",
+                  "        pm.collectionVariables.set('userId', jsonData.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+2348012345678\",\n  \"username\": \"john_doe\",\n  \"name\": \"John Doe\",\n  \"bio\": \"Content creator from Lagos\",\n  \"gender\": \"male\",\n  \"ageBracket\": \"25-34\",\n  \"dateOfBirth\": \"1995-05-15\",\n  \"location\": \"Lagos, Nigeria\",\n  \"interests\": [\"music\", \"comedy\", \"fashion\"],\n  \"deviceId\": \"{{deviceId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/users",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["users"]
+            },
+            "description": "Create a new user after OTP verification"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/users/me",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Get current user's full profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"bio\": \"Updated bio - Professional content creator\",\n  \"avatarUrl\": \"https://example.com/avatar.jpg\",\n  \"location\": \"Abuja, Nigeria\",\n  \"interests\": [\"music\", \"comedy\", \"fashion\", \"tech\"]\n}"
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/users/me",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Update current user's profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Username",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_doe_new\"\n}"
+            },
+            "url": {
+              "raw": "{{userServiceUrl}}/users/me/username",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["users", "me", "username"]
+            },
+            "description": "Update username (must be unique)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/users/{{userId}}",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["users", "{{userId}}"]
+            },
+            "description": "Get public profile of user by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by Username",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{userServiceUrl}}/users/username/john_doe",
+              "host": ["{{userServiceUrl}}"],
+              "path": ["users", "username", "john_doe"]
+            },
+            "description": "Get public profile of user by username"
+          },
+          "response": []
+        }
+      ],
+      "description": "User profile and account management"
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Get Wallet Balance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "balance"]
+            },
+            "description": "Get current user's wallet balance (coins and naira)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Transaction History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wallet/transactions?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallet", "transactions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get paginated transaction history"
+          },
+          "response": []
+        }
+      ],
+      "description": "Digital wallet and coin balance operations (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Purchase Coins",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000,\n  \"currency\": \"NGN\",\n  \"provider\": \"paystack\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/purchase",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "purchase"]
+            },
+            "description": "Initiate coin purchase transaction"
+          },
+          "response": []
+        },
+        {
+          "name": "Withdraw Funds",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coins\": 5000,\n  \"bankCode\": \"058\",\n  \"accountNumber\": \"0123456789\",\n  \"accountName\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/withdraw",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "withdraw"]
+            },
+            "description": "Request withdrawal to bank account"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/verify/:reference",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "verify", ":reference"]
+            },
+            "description": "Verify payment transaction status"
+          },
+          "response": []
+        }
+      ],
+      "description": "Payment processing and transactions (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "Rooms",
+      "item": [
+        {
+          "name": "Create Room",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Friday Night Vibes\",\n  \"description\": \"Join for music and fun\",\n  \"topic\": \"entertainment\",\n  \"isPrivate\": false,\n  \"maxParticipants\": 20,\n  \"costPerMinute\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms"]
+            },
+            "description": "Create a new audio/video room"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms?page=1&limit=20&topic=entertainment",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "topic",
+                  "value": "entertainment"
+                }
+              ]
+            },
+            "description": "Browse active public rooms"
+          },
+          "response": []
+        },
+        {
+          "name": "Join Room",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/:roomId/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", ":roomId", "join"]
+            },
+            "description": "Join an active room"
+          },
+          "response": []
+        },
+        {
+          "name": "Leave Room",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/:roomId/leave",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", ":roomId", "leave"]
+            },
+            "description": "Leave a room"
+          },
+          "response": []
+        }
+      ],
+      "description": "Audio/video rooms and live streaming (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "Gifts",
+      "item": [
+        {
+          "name": "Get Gift Catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/gifts/catalog",
+              "host": ["{{baseUrl}}"],
+              "path": ["gifts", "catalog"]
+            },
+            "description": "Get available virtual gifts"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Gift",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"user-123\",\n  \"giftId\": \"gift-456\",\n  \"quantity\": 1,\n  \"context\": \"room\",\n  \"contextId\": \"room-789\",\n  \"message\": \"Great performance!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/gifts/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["gifts", "send"]
+            },
+            "description": "Send a virtual gift to another user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Gift History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/gifts/history?type=sent&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["gifts", "history"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "sent"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get sent/received gift history"
+          },
+          "response": []
+        }
+      ],
+      "description": "Virtual gifts and tipping (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "Social Graph",
+      "item": [
+        {
+          "name": "Follow User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/social/follow/:userId",
+              "host": ["{{baseUrl}}"],
+              "path": ["social", "follow", ":userId"]
+            },
+            "description": "Follow another user"
+          },
+          "response": []
+        },
+        {
+          "name": "Unfollow User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/social/follow/:userId",
+              "host": ["{{baseUrl}}"],
+              "path": ["social", "follow", ":userId"]
+            },
+            "description": "Unfollow a user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Followers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/social/followers/:userId?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["social", "followers", ":userId"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get user's followers"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Following",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/social/following/:userId?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["social", "following", ":userId"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get users that this user follows"
+          },
+          "response": []
+        }
+      ],
+      "description": "Follow, friend requests, and social interactions (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "Discovery",
+      "item": [
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/discovery/search?q=john&type=users&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["discovery", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "john"
+                },
+                {
+                  "key": "type",
+                  "value": "users"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search for users"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Suggested Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/discovery/suggestions?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["discovery", "suggestions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get personalized user suggestions"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Trending Creators",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/discovery/trending?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["discovery", "trending"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get trending creators"
+          },
+          "response": []
+        }
+      ],
+      "description": "User discovery and search (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "KYC",
+      "item": [
+        {
+          "name": "Submit KYC Information",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tier\": 1,\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"dateOfBirth\": \"1995-05-15\",\n  \"nin\": \"12345678901\",\n  \"bvn\": \"22123456789\",\n  \"address\": \"123 Main Street, Lagos\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/kyc/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["kyc", "submit"]
+            },
+            "description": "Submit KYC information for verification"
+          },
+          "response": []
+        },
+        {
+          "name": "Get KYC Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/kyc/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["kyc", "status"]
+            },
+            "description": "Get current KYC verification status"
+          },
+          "response": []
+        }
+      ],
+      "description": "Know Your Customer verification (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "Referrals",
+      "item": [
+        {
+          "name": "Get My Referral Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/referrals/code",
+              "host": ["{{baseUrl}}"],
+              "path": ["referrals", "code"]
+            },
+            "description": "Get user's referral code"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Referral Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/referrals/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["referrals", "stats"]
+            },
+            "description": "Get referral statistics and earnings"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Referred Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/referrals/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["referrals", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get list of users referred by current user"
+          },
+          "response": []
+        }
+      ],
+      "description": "Referral program and rewards (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?page=1&limit=20&unreadOnly=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "unreadOnly",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Get user notifications"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/:id/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", ":id", "read"]
+            },
+            "description": "Mark notification as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "read-all"]
+            },
+            "description": "Mark all notifications as read"
+          },
+          "response": []
+        }
+      ],
+      "description": "Push notifications and alerts (TO BE IMPLEMENTED)"
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "dashboard"]
+            },
+            "description": "Get admin dashboard statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Manage Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?page=1&limit=50&status=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Get users list with filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Suspend User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Violation of community guidelines\",\n  \"duration\": \"7d\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/:userId/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", ":userId", "suspend"]
+            },
+            "description": "Suspend a user account"
+          },
+          "response": []
+        }
+      ],
+      "description": "Administrative operations (TO BE IMPLEMENTED)"
+    }
+  ]
+}

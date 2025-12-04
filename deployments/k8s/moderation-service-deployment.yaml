@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moderation-service
+  namespace: admin
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: moderation-service
+  template:
+    metadata:
+      labels:
+        app: moderation-service
+    spec:
+      containers:
+        - name: moderation-service
+          image: your-registry/moderation-service:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: moderation-service-config
+              optional: true
+            - secretRef:
+                name: moderation-service-secrets
+              optional: true
